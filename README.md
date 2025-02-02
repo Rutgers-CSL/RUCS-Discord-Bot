@@ -1,5 +1,5 @@
 # RUCS-Discord-Bot
-- Mary, Nicole, Vidu
+Mary, Nicole, Vidu
 
 Overview: 
 
@@ -43,6 +43,11 @@ Features:
 
 Technical Implementation:
 
+Difficulties:
+
+  - How are we going to keep updating the information the bot has 
+
+  
 
 Milestones:
 
