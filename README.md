@@ -11,10 +11,13 @@ It is an easy consolidated way to access all the information a student may need 
 
   Bus Schedules: 
   
-    - Will give updates on when buses will come to specific stops on campus 
-    
-    - Will tell you which bus stops are closest to specific buildings
-
+    - Given a bus stop, what are the routes that visit it?
+    - Given a route, what bus stops are covered?
+    - Given a campus (e.g. Busch, C/D, CA, Livi), bus stop (e.g. BSC, ARC, Hill Center, Stadium) and bus route (e.g. A, B, BL, LX, REXB), tell the user how many minutes away the earliest desired bus is. 
+    - [Stretch] Given a bus stop (e.g. BSC, ARC, Hill Center, Stadium), bus route (e.g. A, B, BL, LX, REXB), and X minutes away, ping the user when the bus is X minutes away.
+      - Always notify user ETA of next bus. 
+      - If a bus is <5 minutes away, notify user, and still set alarm for the later bus.
+    - [Stretch] Do some shortest path algorithm (e.g. Dijkstra's, but tricky to implement) between stops to determine shortest time from stop A to stop B.
 
   Courses: 
   
