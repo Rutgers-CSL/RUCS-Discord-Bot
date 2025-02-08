@@ -1,13 +1,13 @@
 # RUCS-Discord-Bot
 Mary, Nicole, Vidu
 
-Overview: 
+### Overview: 
 
 RUCS Discord bot is a discord bot designed to help people, by allowing them to get info on buses, courses, dining hall options, and events at Rutgers.
 It is an easy consolidated way to access all the information a student may need daily. 
 
 
-Features: 
+### Features: 
 
   Bus Schedules: 
   
@@ -41,18 +41,18 @@ Features:
     - Tell you how to register/buy tickets?
 
 
-Technical Implementation:
+### Technical Implementation:
 
   - Use of Python and JS
 
-Difficulties:
+### Difficulties:
 
   - How are we going to keep updating the information the bot has 
   - How to access the information (Bus API?)
 
   
 
-Milestones:
+### Milestones:
   - Figure out structure/languages/plan
   - Code a simple Discord bot that can interact with user input (ex. saying hello back)
   - * Get bot to print one dining hall menu
