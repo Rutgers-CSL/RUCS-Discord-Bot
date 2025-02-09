@@ -20,33 +20,29 @@ It is an easy consolidated way to access all the information a student may need 
     - [Stretch] Do some shortest path algorithm (e.g. Dijkstra's, but tricky to implement) between stops to determine shortest time from stop A to stop B.
 
   Courses: 
-  
-    - Will tell you which sections of courses are open/closed
-    
-    - Will tell you what courses and sections a professor teaches
-    
-    - Will give you a general overview of what the course will cover 
-    
-    - Will give the pre-reqs needed for the course
-    
+
+    - Given a course code (e.g. 198, 640, 750) will list all the courses and their class codes
+    - Given a course code (e.g. 198:111)
+      - will list the prerequisites for that course
+      - will list course synopsis
+      - will list sections, times and professors
+      - will list what sections are open and closed    
     
   Dining Hall:
   
-    - Will give you a list of menus for each dining hall 
-    
-    - Will give you suggestions based on your dietary restrictions 
+    - Given a campus and allergy will list the food items on menu for that day that align with dietary restrictions (assuming there is only one dining hall per campus)
     
 
   Events:
-  
-    - Will inform you if their are any big events, like football games, are happening this week 
-    
-    - Tell you how to register/buy tickets?
+
+    - Given day of the week and campus, will list events for the day with their times and locations
+    - [Stretch] Given NetID and password will buy football ticket
+    - [Stretch] Given specific event (idk how we do this) will ping user a reminder day of the event
 
 
 ### Technical Implementation:
 
-  - Use of Python and JS
+  - Use of Python and JS (adam suggested python)
 
 ### Difficulties:
 
@@ -57,6 +53,7 @@ It is an easy consolidated way to access all the information a student may need 
 
 ### Milestones:
   - Figure out structure/languages/plan
+  - Create design plan (very detailed plan of what each component will tell the user)
   - Code a simple Discord bot that can interact with user input (ex. saying hello back)
   - * Get bot to print one dining hall menu
   - Find all APIs we need (Bus, Course, Dining hall, events)
