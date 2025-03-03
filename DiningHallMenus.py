@@ -10,7 +10,7 @@ from discord.ext import commands
 
 # Load environment variables
 load_dotenv()
-TOKEN = 'HIDDEN'
+TOKEN = 'Hidden'
 intents = discord.Intents.default()  # Use default intents
 client = discord.Client(intents=intents)
 intents.messages = True  # Enable message reading intent
@@ -179,12 +179,25 @@ async def cookdoug(interaction: discord.Interaction):
     await send_long_message(interaction, f"**Atrium Dining Hall Menu:**\n{menu}")
 
 async def send_long_message(interaction, message):
-    """Splits long messages into multiple Discord messages."""
-    for i in range(0, len(message), 1999):
-        if i == 0:
-            await interaction.followup.send(message[i:i+1999])
-        else:
-            await interaction.channel.send(message[i:i+1999])
+    """Splits long messages into multiple Discord messages, ensuring headers and their items stay together."""
+    max_length = 1999  # Discord's message limit
+    lines = message.split("\n")  # Split message into individual lines
+    chunk = ""  # Stores the message chunk to be sent
+    buffer = ""  # Temporarily stores the current section (header + items)
 
+    for line in lines:
+        if line.startswith("**"):  # New header found
+            if chunk and len(chunk) + len(buffer) > max_length:
+                await interaction.followup.send(chunk)  # Send the accumulated chunk
+                chunk = ""  # Reset chunk for new content
+
+            chunk += buffer  # Move the buffered section to the chunk
+            buffer = line + "\n"  # Start a new section with the header
+
+        else:
+            buffer += line + "\n"  # Add the food item to the buffer
+
+    if chunk + buffer:
+        await interaction.followup.send(chunk + buffer)  # Send any remaining message
 # Run the bot
 bot.run(TOKEN)
