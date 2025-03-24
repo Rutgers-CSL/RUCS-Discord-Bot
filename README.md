@@ -40,6 +40,21 @@ It is an easy consolidated way to access all the information a student may need 
     - [Stretch] Given specific event (idk how we do this) will ping user a reminder day of the event
 
 
+### Installation 
+
+1. To start, make sure you have `python3` and `pip` installed.
+2. Run the following commands
+```bash
+git clone git@github.com:Rutgers-CSL/RUCS-Discord-Bot.git
+cd RUCS-Discord-Bot
+python3 -m venv venv
+source venv/bin/activate
+pip3 install discord requests bs4 dotenv
+touch .env
+```
+3. In the `.env` file, add your `DISCORD_TOKEN` and `GUILD_ID`. Refer to [Discord Develoepr Documentation](https://discord.com/developers/docs/resources/guild) for more details.
+4. Run `python3 bot.py`
+
 ### Technical Implementation:
 
   - Use of Python and JS (adam suggested python)
