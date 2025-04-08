@@ -1,10 +1,14 @@
 import discord
+import json
 import os
 import requests
 import re
+import aiohttp
+import pandas as pd
 from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
+from typing import Optional
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -51,7 +55,7 @@ async def on_reaction_add(reaction, user):
         return
     emoji = reaction.emoji # gets the emoji that was reacted
     message_content = reaction.message.content # gets the contents of the message
-    await reaction.message.channel.send(f'You reacted with "{emoji}" to the message: "{message_content}"')
+    await reaction.message.channel.send(f'{user} reacted with "{emoji}" to the message: "{message_content}"')
 
 
 ### DINING HALL INFORMATION
@@ -93,7 +97,7 @@ def show_Dining_Hall(url):
 # slash commands for livi
 @bot.tree.command(name="livi-lunch", description="Get Livingston Dining Hall's lunch menu.")
 async def livi(interaction: discord.Interaction):
-    await interaction.response.defer()
+    await interaction.response.defer() # allows for retrieving and processing time
     url = 'https://menuportal23.dining.rutgers.edu/foodpronet/pickmenu.aspx?locationNum=03&locationName=Livingston+Dining+Commons&dtdate=03/03/2025&activeMeal=Lunch&sName=Rutgers+University+Dining'
     menu = show_Dining_Hall(url)
     await send_long_message(interaction, f"**Livingston Dining Hall Menu:**\n{menu}")
@@ -133,8 +137,8 @@ async def brower(interaction: discord.Interaction):
 async def brower(interaction: discord.Interaction):
     await interaction.response.defer()
     url = "https://menuportal23.dining.rutgers.edu/FoodPronet/pickmenu.aspx?locationNum=01&locationName=Brower+Commons&dtdate=03/03/2025&activeMeal=Lunch&sName=Rutgers+University+Dining"
-    menu = show_Dining_Hall(url)
-    await send_long_message(interaction, f"**Brower Commons Menu:**\n{menu}")
+    menu = show_Dining_Hall(url) # show_Dining_Hall is a function that is responsible for webscraping
+    await send_long_message(interaction, f"**Brower Commons Menu:**\n{menu}") # sending menu to Discord and prints using send_long_message function
 
 @bot.tree.command(name="brower-dinner", description="Get Brower Commons' dinner menu.")
 async def brower(interaction: discord.Interaction):
@@ -264,6 +268,7 @@ async def cookdoug(interaction: discord.Interaction):
     await send_long_message(interaction, f"**Atrium Dining Hall Menu:**\n{menu}")
 
 
+
 ### BUS ROUTES
 # Dictionary of routes to stops
 bus_routes = {
@@ -336,7 +341,6 @@ bus_routes = {
     ]
 }
 
-
 async def route_autocomplete(interaction: discord.Interaction, current: str):
     """
     This function filters `bus_routes` based on the user's partial input.
@@ -366,6 +370,243 @@ async def get_routes(interaction: discord.Interaction, route: str):
     response = f"{route_title}\n{stop_list}"
 
     await interaction.response.send_message(response)
+
+
+### Sports information
+@bot.tree.command(name="sports", description="Get upcoming Rutgers games happening soon.")
+async def sports(interaction: discord.Interaction):
+    await interaction.response.defer()
+
+    from datetime import datetime, timedelta
+    import requests, json
+    import pandas as pd
+    from bs4 import BeautifulSoup
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Date range setup
+    today = datetime.today().date()
+    one_week = today + timedelta(days=7)
+    two_weeks = today + timedelta(days=14)
+
+    # Emoji dictionary per sport
+    sport_emojis = {
+        "Baseball": "⚾",
+        "Softball": "🥎",
+        "Football": "🏈",
+        "Men's Basketball": "🏀",
+        "Women's Basketball": "🏀",
+        "Men's Soccer": "⚽",
+        "Women's Soccer": "⚽",
+        "Men's Lacrosse": "🥍",
+        "Women's Lacrosse": "🥍",
+        "Wrestling": "🤼",
+        "Volleyball": "🏐",
+        "Gymnastics": "🤸",
+        "Tennis": "🎾",
+    }
+
+    # Schedule URLs
+    sports_urls = {
+        "Baseball": "https://scarletknights.com/sports/baseball/schedule",
+        "Men's Basketball": "https://scarletknights.com/sports/mens-basketball/schedule",
+        "Women's Basketball": "https://scarletknights.com/sports/womens-basketball/schedule",
+        "Football": "https://scarletknights.com/sports/football/schedule",
+        "Men's Lacrosse": "https://scarletknights.com/sports/mens-lacrosse/schedule",
+        "Women's Lacrosse": "https://scarletknights.com/sports/womens-lacrosse/schedule",
+        "Men's Soccer": "https://scarletknights.com/sports/mens-soccer/schedule",
+        "Women's Soccer": "https://scarletknights.com/sports/womens-soccer/schedule",
+        "Softball": "https://scarletknights.com/sports/softball/schedule",
+        "Volleyball": "https://scarletknights.com/sports/volleyball/schedule",
+        "Wrestling": "https://scarletknights.com/sports/wrestling/schedule"
+    }
+
+    # Scraper
+    def fetch_events(sport, url):
+        events = []
+        try:
+            response = requests.get(url, timeout=10)
+            soup = BeautifulSoup(response.text, "html.parser")
+            scripts = soup.find_all("script", type="application/ld+json")
+            for script in scripts:
+                if not script.string:
+                    continue
+                try:
+                    data = json.loads(script.string)
+                    if isinstance(data, dict):
+                        data = data.get("@graph", [data])
+                    for item in data:
+                        if item.get("@type") == "SportsEvent":
+                            date_str = item.get("startDate", "").split("T")[0]
+                            try:
+                                date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+                            except:
+                                continue
+                            if date_obj < today:
+                                continue
+                            description = item.get("description", "N/A")
+                            matchup = description.split(" on ")[0] if " on " in description else description
+                            location = item.get("location", {}).get("name", "N/A")
+                            pretty_date = date_obj.strftime("%B %d").replace(" 0", " ")
+                            events.append({
+                                "Sport": sport,
+                                "Emoji": sport_emojis.get(sport, "🏟️"),
+                                "RawDate": date_obj,
+                                "PrettyDate": pretty_date,
+                                "Matchup": matchup,
+                                "Location": location
+                            })
+                except:
+                    continue
+        except:
+            pass
+        return events
+
+    # Run in parallel
+    all_events = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = executor.map(lambda item: fetch_events(*item), sports_urls.items())
+        for result in results:
+            all_events.extend(result)
+
+    df = pd.DataFrame(all_events).sort_values("RawDate").reset_index(drop=True)
+
+    # Filter logic
+    week_games = df[df["RawDate"] <= one_week]
+    two_week_games = df[df["RawDate"] <= two_weeks]
+    month_games = df[df["RawDate"].apply(lambda d: d.month == today.month)]
+
+
+    if not week_games.empty:
+        filtered = week_games
+        header = "**🏟️ Games in the next 7 days**"
+    elif not two_week_games.empty:
+        filtered = two_week_games
+        header = "**🏟️ Games in the next 14 days**"
+    elif not month_games.empty:
+        filtered = month_games
+        header = "**🏟️ Games later this month**"
+    else:
+        await interaction.followup.send("❌ No upcoming games found.")
+        return
+
+    # Group and format
+    lines = [header]
+    grouped = filtered.groupby("PrettyDate")
+
+    for date, group in grouped:
+        lines.append(f"\n **{date}**")
+        for row in group.itertuples(index=False):
+            matchup_clean = (
+                row.Matchup
+                .replace("Rutgers University", "Rutgers")
+                .replace(" At ", " at ")
+                .replace(" Vs ", " vs ")
+            )
+            lines.append(f"• {row.Emoji} **{row.Sport}** — *{matchup_clean}*   📍 {row.Location}\n")
+
+    await send_long_message(interaction, "\n".join(lines))
+
+
+## SOC
+# async def fetch_courses(year: int, term: int):
+#     """Fetches course data from Rutgers SOC API based on year and term."""
+#     url = f"https://classes.rutgers.edu/soc/api/courses.json?year={year}&term={term}&campus=NB"
+#     async with aiohttp.ClientSession() as session:
+#         async with session.get(url) as response:
+#             if response.status == 200:
+#                 return await response.json()
+            
+#                 # Write the fetched JSON data to a file for debugging
+#                 with open("courses_debug.json", "w", encoding="utf-8") as f:
+#                     json.dump(data, f, indent=4)
+
+#                 print("✅ Fetched course data saved to courses_debug.json")  # Debugging statement
+#                 return data
+            
+#             else:
+#                 print(f"❌ Failed to fetch courses. HTTP Status: {response.status}")  # Debugging statement
+#                 return None
+async def fetch_courses(year: int, term: int):
+    """Fetches course data from Rutgers SOC API based on year and term."""
+    url = f"https://classes.rutgers.edu/soc/api/courses.json?year={year}&term={term}&campus=NB"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            try:
+                data = await response.json()
+            except aiohttp.ClientResponseError as e:
+                print(f"❌ Error parsing JSON: {e}")
+                data = None
+            except Exception as e:
+                print(f"❌ Unexpected error during JSON parsing: {e}")
+                data = None
+
+            # Write the fetched JSON data to a file for debugging (always do this)
+            if data:
+                try:
+                    with open("courses_debug.json", "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4)
+                    print("✅ Fetched course data saved to courses_debug.json")  # Debugging statement
+                except Exception as e:
+                    print(f"❌ Error writing to debug file: {e}")
+            else:
+                print("⚠️ No data received from the API to save.")
+
+            if response.status == 200:
+                return data
+            else:
+                print(f"❌ Failed to fetch courses. HTTP Status: {response.status}")  # Debugging statement
+                return None
+
+@bot.tree.command(name="get_courses", description="Get courses and sections for a given year and semester at Rutgers NB.")
+@app_commands.describe(
+    year="Enter the academic year (ex: 2025)",
+    term="Enter the semester code (1=Spring, 7=Summer, 9=Fall)",
+    course_code="Enter the course code (ex: 198 for CS)",
+    subject_code="(Optional) Enter the class code (ex: 111 for Intro to CS)"
+)
+async def get_courses(interaction: discord.Interaction, year: int, term: int, course_code: str, subject_code: Optional[str] = None):
+    """Slash command to fetch and display course data based on filters."""
+    await interaction.response.defer()
+
+    data = await fetch_courses(year, term)
+    if not data:
+        await interaction.followup.send("Failed to retrieve course data. Please try again later.")
+        return
+
+    course_dict = {}
+
+    for course in data:
+        subject = course.get("subject", "Unknown")
+        current_course_number = course.get("courseNumber", "Unknown")
+        title = course.get("title", "No Title")
+        credits = course.get("credits", "N/A")
+
+        # Check if the subject code matches
+        if subject != str(subject_code).zfill(3):  # Ensure subject code is 3 digits with leading zeros
+            continue
+
+        # Check if a specific course number is provided and if it matches
+        if course_code and current_course_number != str(course_code):
+            continue
+
+        sections = []
+        for section in course.get("sections", []):
+            section_number = section.get("number", "Unknown")
+            index = section.get("index", "N/A")
+            sections.append(f"Sec {section_number} (Index: {index})")
+
+        # Store in dictionary
+        course_dict[f"{current_course_number} - {title} ({credits} credits)"] = sections
+
+        # Format output
+        output = []
+        for course, sections in course_dict.items():
+            sections_text = "\n".join(sections) if sections else "No sections available"
+            output.append(f"**{course}**\n{sections_text}\n")
+
+        final_message = "\n".join(output) if output else f"No matching courses found for Subject Code: {subject_code}."
+        await interaction.followup.send(f"**Courses for {year}, Term {term}, Subject Code {subject_code}**\n{final_message}")
+
 
 # sending long messages
 async def send_long_message(interaction, message):
